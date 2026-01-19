@@ -1,0 +1,24 @@
+{
+  "name": "signal-workers",
+  "version": "1.0.0",
+  "description": "Signal Platform Cloudflare Workers",
+  "main": "workers/api/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "db:migrate": "wrangler d1 execute signal-feedback-db --file=./migrations/001_initial.sql",
+    "db:migrate:local": "wrangler d1 execute signal-feedback-db --local --file=./migrations/001_initial.sql",
+    "tail": "wrangler tail",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "hono": "^3.11.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.22.0"
+  }
+}
