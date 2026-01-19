@@ -1,0 +1,25 @@
+{
+  "name": "signal-workers",
+  "version": "1.0.0",
+  "description": "Signal API - Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:migrate": "wrangler d1 execute signal-db --file=./migrations/001_initial.sql",
+    "db:migrate:local": "wrangler d1 execute signal-db --local --file=./migrations/001_initial.sql",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "wrangler": "^3.24.0"
+  }
+}

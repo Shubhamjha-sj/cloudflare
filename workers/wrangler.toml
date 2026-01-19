@@ -1,0 +1,60 @@
+name = "signal-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers Paid plan required for these features
+workers_dev = true
+
+# ============================================
+# D1 Database
+# ============================================
+[[d1_databases]]
+binding = "DB"
+database_name = "signal-db"
+database_id = "YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create signal-db
+
+# ============================================
+# Vectorize Index
+# ============================================
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "signal-embeddings"
+
+# ============================================
+# Queues
+# ============================================
+[[queues.producers]]
+queue = "signal-feedback-queue"
+binding = "FEEDBACK_QUEUE"
+
+[[queues.consumers]]
+queue = "signal-feedback-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+
+# ============================================
+# Workers AI
+# ============================================
+[ai]
+binding = "AI"
+
+# ============================================
+# Environment Variables
+# ============================================
+[vars]
+ENVIRONMENT = "development"
+
+# ============================================
+# Routes (Production)
+# ============================================
+# routes = [
+#   { pattern = "signal-api.yourdomain.com/*", zone_name = "yourdomain.com" }
+# ]
+
+# ============================================
+# Development
+# ============================================
+[dev]
+port = 8787
+local_protocol = "http"
