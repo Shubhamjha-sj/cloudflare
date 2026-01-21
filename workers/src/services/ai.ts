@@ -39,39 +39,58 @@ export async function generateEmbeddings(env: Env, texts: string[]): Promise<num
  * Analyze sentiment of text
  */
 export async function analyzeSentiment(env: Env, text: string): Promise<SentimentResult> {
-  const response = await env.AI.run(MODELS.SENTIMENT, {
-    text: text,
-  });
-  
-  // Response is array of { label: string, score: number }
-  const scores = response[0] as Array<{ label: string; score: number }>;
-  
-  const positiveScore = scores.find(s => s.label === 'POSITIVE')?.score || 0;
-  const negativeScore = scores.find(s => s.label === 'NEGATIVE')?.score || 0;
-  
-  // Calculate normalized sentiment score (-1 to 1)
-  const sentimentScore = positiveScore - negativeScore;
-  
-  // Determine label based on score and content analysis
-  let label: SentimentLabel;
-  if (sentimentScore > 0.3) {
-    label = 'positive';
-  } else if (sentimentScore < -0.5) {
-    label = 'frustrated';
-  } else if (sentimentScore < -0.3) {
-    label = 'concerned';
-  } else if (sentimentScore < -0.1) {
-    label = 'annoyed';
-  } else if (sentimentScore < 0.1) {
-    label = 'neutral';
-  } else {
-    label = 'positive';
+  try {
+    const response = await env.AI.run(MODELS.SENTIMENT, {
+      text: text,
+    });
+    
+    // Handle different response formats
+    let scores: Array<{ label: string; score: number }>;
+    
+    if (Array.isArray(response) && Array.isArray(response[0])) {
+      // Format: [[{label, score}, ...]]
+      scores = response[0];
+    } else if (Array.isArray(response)) {
+      // Format: [{label, score}, ...]
+      scores = response;
+    } else if (response && typeof response === 'object') {
+      // Format: {label, score} or similar
+      scores = [response as any];
+    } else {
+      throw new Error('Unexpected sentiment response format');
+    }
+    
+    const positiveScore = scores.find(s => s.label === 'POSITIVE')?.score || 0;
+    const negativeScore = scores.find(s => s.label === 'NEGATIVE')?.score || 0;
+    
+    // Calculate normalized sentiment score (-1 to 1)
+    const sentimentScore = positiveScore - negativeScore;
+    
+    // Determine label based on score and content analysis
+    let label: SentimentLabel;
+    if (sentimentScore > 0.3) {
+      label = 'positive';
+    } else if (sentimentScore < -0.5) {
+      label = 'frustrated';
+    } else if (sentimentScore < -0.3) {
+      label = 'concerned';
+    } else if (sentimentScore < -0.1) {
+      label = 'annoyed';
+    } else if (sentimentScore < 0.1) {
+      label = 'neutral';
+    } else {
+      label = 'positive';
+    }
+    
+    return {
+      score: sentimentScore,
+      label,
+    };
+  } catch (error) {
+    console.error('Sentiment analysis failed:', error);
+    // Fallback to neutral
+    return { score: 0, label: 'neutral' };
   }
-  
-  return {
-    score: sentimentScore,
-    label,
-  };
 }
 
 /**
@@ -193,7 +212,12 @@ export async function generateChatResponse(
   context: string,
   conversationHistory: Array<{ role: string; content: string }>
 ): Promise<string> {
-  const systemPrompt = `You are Signal, an AI assistant for a customer feedback intelligence platform.
+  // Extract previous response for context continuity
+  const lastAssistantMessage = conversationHistory
+    .filter(m => m.role === 'assistant')
+    .slice(-1)[0]?.content || '';
+  
+  const systemPrompt = `You are Cerebro, an AI assistant for a customer feedback intelligence platform.
 You help Product Managers understand customer feedback, identify trends, and prioritize issues.
 
 Your knowledge comes from real-time feedback data from multiple sources: Support Tickets, GitHub Issues, Discord, Twitter/X, Community Forums, and Email.
@@ -201,11 +225,13 @@ Your knowledge comes from real-time feedback data from multiple sources: Support
 Guidelines:
 - Be concise and actionable
 - Use specific numbers and customer names when available
-- Highlight urgency and business impact
+- Highlight urgency and business impact (use consistent labels: Low=1-3, Medium=4-6, High=7-10)
 - Suggest next steps when appropriate
+- IMPORTANT: Consolidate feedback by customer - don't list the same customer multiple times
+- IMPORTANT: If a follow-up question refers to previous response, use that context
 - If you don't have enough information, say so
 
-Context from feedback database:
+${lastAssistantMessage ? `Your previous response mentioned:\n${lastAssistantMessage.substring(0, 500)}...\n\n` : ''}Context from feedback database:
 ${context}`;
 
   const messages = [

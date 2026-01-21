@@ -61,7 +61,7 @@ class FeedbackBase(BaseModel):
     customer_name: Optional[str] = None
     customer_tier: Optional[CustomerTier] = None
     customer_arr: Optional[int] = None
-    metadata: Optional[Dict[str, Any]] = None
+    extra_data: Optional[Dict[str, Any]] = None  # renamed from metadata (reserved in SQLAlchemy)
 
 
 class FeedbackCreate(FeedbackBase):
@@ -203,6 +203,16 @@ class SemanticSearchRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=500)
     limit: int = Field(10, ge=1, le=50)
     filters: Optional[Dict[str, Any]] = None
+
+
+class SemanticSearchResult(BaseModel):
+    id: str
+    content: str
+    score: float
+    source: Optional[str] = None
+    product: Optional[str] = None
+    sentiment: Optional[float] = None
+    created_at: Optional[datetime] = None
 
 
 class GitHubWebhook(BaseModel):

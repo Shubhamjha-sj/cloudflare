@@ -8,14 +8,15 @@ interface AIChatbotProps {
   onClose: () => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onNavigateToSource?: (source: ChatSource) => void;
 }
 
-export const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose, isExpanded, onToggleExpand }) => {
+export const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose, isExpanded, onToggleExpand, onNavigateToSource }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: `Hi! I'm your Signal AI assistant powered by Cloudflare's AI Search and Workers AI. I can help you explore customer feedback insights.
+      content: `Hi! I'm your Cerebro AI assistant powered by Cloudflare's AI Search and Workers AI. I can help you explore customer feedback insights.
 
 Try asking me:
 • "What are the top trending issues?"
@@ -85,16 +86,16 @@ Try asking me:
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed ${isExpanded ? 'inset-4' : 'bottom-4 right-4 w-96 h-[600px]'} bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50 transition-all duration-300`}>
+    <div className={`fixed ${isExpanded ? 'inset-2 sm:inset-4' : 'bottom-2 right-2 left-2 sm:left-auto sm:bottom-4 sm:right-4 w-auto sm:w-96 h-[calc(100vh-1rem)] sm:h-[600px]'} bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50 transition-all duration-300`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-orange-600 rounded-t-2xl">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-orange-600 rounded-t-2xl">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white/20 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Signal AI Assistant</h3>
-            <p className="text-xs text-orange-100">Powered by Cloudflare AI Search</p>
+            <h3 className="text-sm sm:text-base font-semibold text-white">Cerebro AI</h3>
+            <p className="text-xs text-orange-100 hidden sm:block">Powered by Cloudflare AI Search</p>
           </div>
         </div>
         <div className="flex items-center space-x-1">
@@ -123,7 +124,7 @@ Try asking me:
                   <div className="mt-2 space-y-1">
                     <p className="text-xs text-gray-500 font-medium">Sources:</p>
                     {message.sources.map((source, idx) => (
-                      <SourceBadge key={idx} source={source} />
+                      <SourceBadge key={idx} source={source} onNavigate={onNavigateToSource} />
                     ))}
                   </div>
                 )}
@@ -184,19 +185,29 @@ Try asking me:
   );
 };
 
-const SourceBadge: React.FC<{ source: ChatSource }> = ({ source }) => {
+const SourceBadge: React.FC<{ source: ChatSource; onNavigate?: (source: ChatSource) => void }> = ({ source, onNavigate }) => {
   const typeColors: Record<string, string> = {
-    feedback: 'bg-blue-100 text-blue-700',
-    theme: 'bg-purple-100 text-purple-700',
-    customer: 'bg-green-100 text-green-700',
+    feedback: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+    theme: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
+    customer: 'bg-green-100 text-green-700 hover:bg-green-200',
+  };
+
+  const handleClick = () => {
+    if (onNavigate) {
+      onNavigate(source);
+    }
   };
 
   return (
-    <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs ${typeColors[source.type] || 'bg-gray-100 text-gray-700'}`}>
+    <button 
+      onClick={handleClick}
+      title={`View ${source.type}: ${source.title}`}
+      className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs cursor-pointer transition-colors ${typeColors[source.type] || 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+    >
       <span className="capitalize">{source.type}:</span>
       <span className="font-medium truncate max-w-[150px]">{source.title}</span>
-      <ExternalLink className="w-3 h-3" />
-    </div>
+      <ExternalLink className="w-3 h-3 flex-shrink-0" />
+    </button>
   );
 };
 

@@ -38,6 +38,13 @@ export interface TrendingTheme {
   affectedCustomers: string[];
   suggestedAction?: string;
   createdAt: string;
+  topIssues?: Array<{
+    id: string;
+    content: string;
+    product: string;
+    sentimentLabel: string;
+    customerName: string | null;
+  }>;
 }
 
 export interface Customer {
@@ -139,6 +146,7 @@ export interface FeedbackFilters {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  time_range?: TimeRange;
 }
 
 export type TimeRange = '24h' | '7d' | '30d' | '90d';

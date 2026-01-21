@@ -15,6 +15,9 @@ export interface Env {
   // Workers AI
   AI: Ai;
   
+  // Email Routing
+  ALERT_EMAIL?: SendEmail;
+  
   // Environment variables
   ENVIRONMENT: string;
 }

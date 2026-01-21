@@ -31,7 +31,7 @@ class FeedbackModel(Base):
     customer_arr = Column(Integer)
     status = Column(String(50), default="new")
     assigned_to = Column(String(255))
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)  # renamed from metadata (reserved in SQLAlchemy)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

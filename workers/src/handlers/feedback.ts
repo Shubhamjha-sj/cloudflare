@@ -50,6 +50,27 @@ app.get('/', async (c) => {
   
   const dateTo = c.req.query('date_to');
   if (dateTo) filters.date_to = dateTo;
+
+  // Convert time_range to date_from if specified
+  const timeRange = c.req.query('time_range');
+  if (timeRange && !dateFrom) {
+    const now = new Date();
+    switch (timeRange) {
+      case '24h':
+        now.setHours(now.getHours() - 24);
+        break;
+      case '7d':
+        now.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        now.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        now.setDate(now.getDate() - 90);
+        break;
+    }
+    filters.date_from = now.toISOString();
+  }
   
   const { data, total } = await listFeedback(env, filters, { page, page_size: pageSize });
   

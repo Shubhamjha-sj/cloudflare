@@ -35,10 +35,13 @@ app.post('/', async (c) => {
   }
   const history = conversations.get(conversationId)!;
   
-  // Retrieve relevant context using RAG
-  const { context, sources } = await retrieveContext(env, body.message);
+  // Enhance query with context from previous conversation for follow-up questions
+  const enhancedQuery = enhanceQueryWithContext(body.message, history);
   
-  // Generate response
+  // Retrieve relevant context using RAG
+  const { context, sources } = await retrieveContext(env, enhancedQuery);
+  
+  // Generate response - pass original message but enhanced context
   const response = await generateChatResponse(
     env,
     body.message,
@@ -89,6 +92,101 @@ app.delete('/history/:id', async (c) => {
   
   return c.json({ success: true, message: 'Conversation cleared' });
 });
+
+/**
+ * Detect if query is a follow-up and enhance with context from previous messages
+ */
+function enhanceQueryWithContext(
+  query: string,
+  history: Array<{ role: string; content: string }>
+): string {
+  const queryLower = query.toLowerCase();
+  
+  // Patterns that indicate a follow-up question
+  const followUpPatterns = [
+    /\b(their|them|they|these|those|this|that|it)\b/i,
+    /\b(mentioned|above|previous|earlier|said|listed)\b/i,
+    /\b(explain|elaborate|tell me more|what about|details|specifics)\b/i,
+    /\b(which|what|how)\s+(are|is|do|does|can|could|should|would)\s+(the|these|those|they|it)\b/i,
+    /^(and|but|also|what about|how about|why)\b/i,
+    /\b(for (them|those|these|the mentioned|the above))\b/i,
+    /\bcritical\b/i,
+  ];
+  
+  const isFollowUp = followUpPatterns.some(pattern => pattern.test(queryLower));
+  
+  if (!isFollowUp || history.length === 0) {
+    return query;
+  }
+  
+  // Get the last assistant response
+  const lastAssistantMessage = history
+    .filter(m => m.role === 'assistant')
+    .slice(-1)[0]?.content || '';
+  
+  if (!lastAssistantMessage) {
+    return query;
+  }
+  
+  // Extract key entities from the last response
+  const extractedEntities: string[] = [];
+  
+  // Extract customer names (patterns like "**CustomerName (tier)**" or "CustomerName (enterprise)")
+  const customerMatches = lastAssistantMessage.match(/\*\*([A-Z][^*]+?)\s*\([^)]+\)\*\*/g);
+  if (customerMatches) {
+    customerMatches.forEach(match => {
+      const name = match.replace(/\*\*/g, '').replace(/\s*\([^)]+\)/, '').trim();
+      if (name && !extractedEntities.includes(name)) {
+        extractedEntities.push(name);
+      }
+    });
+  }
+  
+  // Also try simpler pattern for customer names
+  const simpleCustomerMatches = lastAssistantMessage.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s*\((enterprise|pro|free)\)/g);
+  if (simpleCustomerMatches) {
+    simpleCustomerMatches.forEach(match => {
+      const name = match.replace(/\s*\([^)]+\)/, '').trim();
+      if (name && !extractedEntities.includes(name)) {
+        extractedEntities.push(name);
+      }
+    });
+  }
+  
+  // Extract products mentioned
+  const products = ['Workers', 'R2', 'Pages', 'D1', 'KV', 'Queues', 'Durable Objects', 'Vectorize', 'Workers AI', 'Hyperdrive'];
+  products.forEach(product => {
+    if (lastAssistantMessage.toLowerCase().includes(product.toLowerCase())) {
+      if (!extractedEntities.includes(product)) {
+        extractedEntities.push(product);
+      }
+    }
+  });
+  
+  // Extract key themes/issues (numbered items or bold items)
+  const themeMatches = lastAssistantMessage.match(/\*\*([^*]+)\*\*/g);
+  if (themeMatches) {
+    themeMatches.slice(0, 3).forEach(match => {
+      const theme = match.replace(/\*\*/g, '').trim();
+      // Only add if it looks like a theme/issue (not a customer name we already have)
+      if (theme && theme.length < 50 && !extractedEntities.includes(theme) && !/enterprise|pro|free/i.test(theme)) {
+        extractedEntities.push(theme);
+      }
+    });
+  }
+  
+  if (extractedEntities.length === 0) {
+    return query;
+  }
+  
+  // Enhance the query with extracted context
+  const contextAddition = extractedEntities.slice(0, 4).join(', ');
+  const enhancedQuery = `${query} (context: ${contextAddition})`;
+  
+  console.log(`Enhanced query: "${query}" -> "${enhancedQuery}"`);
+  
+  return enhancedQuery;
+}
 
 /**
  * POST /api/chat/summarize
@@ -152,23 +250,38 @@ async function retrieveContext(
 ): Promise<{ context: string; sources: ChatSource[] }> {
   const sources: ChatSource[] = [];
   const contextParts: string[] = [];
+  const queryLower = query.toLowerCase();
+  
+  // Track unique items to avoid duplicates in sources
+  const seenFeedbackIds = new Set<string>();
+  const seenFeedbackContent = new Set<string>();
+  const seenThemeIds = new Set<string>();
+  const seenCustomers = new Set<string>();
   
   try {
     // 1. Semantic search for relevant feedback
-    const searchResults = await semanticSearch(env, query, 5);
+    const searchResults = await semanticSearch(env, query, 8);
     
     if (searchResults.length > 0) {
       const feedbackItems = await Promise.all(
         searchResults.map(async (result) => {
           const feedback = await getFeedbackById(env, result.id);
           if (feedback) {
-            sources.push({
-              type: 'feedback',
-              id: feedback.id,
-              title: feedback.content.substring(0, 50) + '...',
-              relevance: result.score,
-            });
-            return feedback;
+            // Deduplicate by content (first 50 chars) to avoid similar feedback
+            const contentKey = feedback.content.substring(0, 50).toLowerCase();
+            
+            if (!seenFeedbackIds.has(feedback.id) && !seenFeedbackContent.has(contentKey)) {
+              seenFeedbackIds.add(feedback.id);
+              seenFeedbackContent.add(contentKey);
+              
+              sources.push({
+                type: 'feedback',
+                id: feedback.id,
+                title: feedback.content.substring(0, 50) + '...',
+                relevance: result.score,
+              });
+              return { ...feedback, score: result.score };
+            }
           }
           return null;
         })
@@ -178,10 +291,14 @@ async function retrieveContext(
       if (validFeedback.length > 0) {
         contextParts.push('RELEVANT FEEDBACK:');
         validFeedback.forEach((fb, i) => {
+          const customerKey = fb!.customer_name || 'Anonymous';
+          const isNewCustomer = !seenCustomers.has(customerKey);
+          seenCustomers.add(customerKey);
+          
           contextParts.push(`${i + 1}. [${fb!.source}] ${fb!.content}`);
-          contextParts.push(`   Sentiment: ${fb!.sentiment.toFixed(2)}, Urgency: ${fb!.urgency}/10`);
+          contextParts.push(`   Sentiment: ${fb!.sentiment.toFixed(2)}, Urgency: ${fb!.urgency}/10 (${fb!.urgency <= 3 ? 'Low' : fb!.urgency <= 6 ? 'Medium' : 'High'})`);
           if (fb!.customer_name) {
-            contextParts.push(`   Customer: ${fb!.customer_name} (${fb!.customer_tier})`);
+            contextParts.push(`   Customer: ${fb!.customer_name} (${fb!.customer_tier})${isNewCustomer ? '' : ' [DUPLICATE - consolidate with above]'}`);
           }
         });
       }
@@ -191,18 +308,28 @@ async function retrieveContext(
   }
   
   try {
-    // 2. Get trending themes
+    // 2. Get trending themes - only add if query seems to be asking about themes/trends
+    const isAskingAboutThemes = /theme|trend|issue|problem|top|popular|common|frequent|urgent/i.test(query);
     const themes = await listThemes(env, 5);
     
     if (themes.length > 0) {
       contextParts.push('\nTRENDING THEMES:');
       themes.forEach((theme, i) => {
-        sources.push({
-          type: 'theme',
-          id: theme.id,
-          title: theme.theme,
-          relevance: 0.8,
-        });
+        // Only add to sources if the query mentions themes or the theme is relevant
+        const themeRelevant = isAskingAboutThemes || 
+          queryLower.includes(theme.theme.toLowerCase()) ||
+          theme.products.some(p => queryLower.includes(p.toLowerCase()));
+        
+        // Deduplicate themes
+        if (themeRelevant && !seenThemeIds.has(theme.id)) {
+          seenThemeIds.add(theme.id);
+          sources.push({
+            type: 'theme',
+            id: theme.id,
+            title: theme.theme,
+            relevance: 0.8,
+          });
+        }
         contextParts.push(`${i + 1}. ${theme.theme} (${theme.mentions} mentions, ${theme.sentiment})`);
       });
     }

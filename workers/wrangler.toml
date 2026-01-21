@@ -1,49 +1,64 @@
-name = "signal-api"
+name = "cerebro-api"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Workers Paid plan required for these features
+# Free plan compatible configuration
 workers_dev = true
 
 # ============================================
-# D1 Database
+# D1 Database (Free)
 # ============================================
 [[d1_databases]]
 binding = "DB"
 database_name = "signal-db"
-database_id = "YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create signal-db
+database_id = "ea456693-57dc-4680-8bdc-e1bcda6c462c"
 
 # ============================================
-# Vectorize Index
+# Workers AI (Free)
+# ============================================
+[ai]
+binding = "AI"
+
+# ============================================
+# Vectorize Index (Free tier: 100 indexes, 30M dimensions)
 # ============================================
 [[vectorize]]
 binding = "VECTORIZE"
 index_name = "signal-embeddings"
 
 # ============================================
-# Queues
+# Queues (PAID - commented out)
 # ============================================
-[[queues.producers]]
-queue = "signal-feedback-queue"
-binding = "FEEDBACK_QUEUE"
+# [[queues.producers]]
+# queue = "signal-feedback-queue"
+# binding = "FEEDBACK_QUEUE"
 
-[[queues.consumers]]
-queue = "signal-feedback-queue"
-max_batch_size = 10
-max_batch_timeout = 30
-
-# ============================================
-# Workers AI
-# ============================================
-[ai]
-binding = "AI"
+# [[queues.consumers]]
+# queue = "signal-feedback-queue"
+# max_batch_size = 10
+# max_batch_timeout = 30
 
 # ============================================
 # Environment Variables
 # ============================================
 [vars]
 ENVIRONMENT = "development"
+
+# ============================================
+# Email Routing (Free) - Send alert notifications
+# Note: Requires Email Routing enabled on your domain
+# Replace destination_address with your verified email
+# ============================================
+[[send_email]]
+name = "ALERT_EMAIL"
+destination_address = "alerts@example.com"
+
+# ============================================
+# Cron Triggers - Runs every hour
+# ============================================
+[triggers]
+crons = ["0 * * * *"]  # Every hour at minute 0
 
 # ============================================
 # Routes (Production)

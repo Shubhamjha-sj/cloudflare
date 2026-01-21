@@ -1,0 +1,453 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0\fswiss Helvetica;}{\f1\fmodern Courier New;}}
+{\colortbl;\red0\green0\blue0;\red0\green102\blue204;\red102\green102\blue102;\red0\green153\blue0;\red204\green0\blue0;}
+\paperw12240\paperh15840\margl1440\margr1440\margt1440\margb1440
+
+\pard\qc
+\f0\fs36\b Cerebro Platform Architecture\b0\fs22\par
+\fs20\cf3 Customer Feedback Intelligence Platform\cf1\fs22\par
+\fs18\i Built on Cloudflare Developer Platform\i0\fs22\par
+\fs16\cf5 PROTOTYPE - Uses Synthetic Data Generation\cf1\fs22\par
+\par
+
+\pard
+\fs28\b 1. High-Level Architecture (Prototype)\b0\fs22\par
+\par
+{\f1\fs18
++------------------------------------------------------------------+\par
+|                    DATA GENERATION (Prototype)                    |\par
+|  +--------------------+  +--------------------+  +--------------+ |\par
+|  | Cron Trigger       |  | Manual Trigger     |  | SQL Seeds    | |\par
+|  | (Hourly synthetic  |  | (/api/cron/trigger)|  | (Bulk data)  | |\par
+|  |  feedback gen)     |  |                    |  |              | |\par
+|  +--------------------+  +--------------------+  +--------------+ |\par
++-------------------------------+----------------------------------+\par
+                                |\par
+                                | Synthetic feedback records\par
+                                v\par
++------------------------------------------------------------------+\par
+|                 CLOUDFLARE WORKERS (Edge Runtime)                 |\par
+|  +-------------+  +-------------+  +-------------+  +-----------+ |\par
+|  | Scheduled   |  | Feedback    |  | Analytics   |  | Chat      | |\par
+|  | Handler     |  | Handler     |  | Handler     |  | Handler   | |\par
+|  +-------------+  +-------------+  +-------------+  +-----------+ |\par
++------------------------------------------------------------------+\par
+                         |                |               |\par
+                         v                v               v\par
+                  +-------------+  +-------------+  +-------------+\par
+                  | Workers AI  |  | D1 Database |  | Vectorize   |\par
+                  | (ML Models) |  | (SQL)       |  | (Vectors)   |\par
+                  +-------------+  +-------------+  +-------------+\par
+                                        |\par
+                                        v\par
+                           +------------------------+\par
+                           |   Cloudflare Pages     |\par
+                           |   (React Dashboard)    |\par
+                           +------------------------+\par
+}\par
+\par
+\fs24\b Note:\b0  In production, the Data Generation layer would be replaced by real\par
+webhook integrations (GitHub, Discord, Zendesk, etc.). The webhook handlers\par
+exist in code but are not connected to real external sources in this prototype.\par
+\par
+
+\fs28\b 2. Cloudflare Products Used\b0\fs22\par
+\par
+\fs24\b Why This Stack?\b0\fs22\par
+\par
+\bullet  \b All-in-One Platform:\b0  Everything runs on Cloudflare's edge network - no need for AWS, GCP, or separate AI providers. Single dashboard, single billing, unified tooling.\par
+\bullet  \b Free Tier Friendly:\b0  The prototype runs entirely on free tiers (Workers: 100K req/day, D1: 5M reads/day, Workers AI: 10K neurons/day, Vectorize: 30M dimensions).\par
+\bullet  \b Low Latency:\b0  Workers + D1 + Vectorize all run at the edge, close to users. AI inference happens on Cloudflare's GPUs without external API round-trips.\par
+\bullet  \b Developer Experience:\b0  Single wrangler.toml config, local dev with wrangler dev, TypeScript throughout, bindings injected into worker environment.\par
+\par
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+\b Product\cell Why It Was Chosen\cell\b0\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Workers\cell Serverless compute at the edge. Runs all API endpoints, handlers, and business logic. No server management, auto-scales, low latency globally.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+D1\cell SQLite-based relational database. Stores structured feedback, customers, alerts, themes. Free tier, tight Workers integration, SQL queries for analytics.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Workers AI\cell On-platform AI inference. Runs sentiment analysis, theme classification, embeddings, and chat. No external API calls, no API keys to manage, usage-based pricing.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Vectorize\cell Vector database for semantic search. Stores 768-dim embeddings of feedback content. Enables "find similar feedback" and RAG context retrieval for chatbot.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Pages\cell Static site hosting with CDN. Hosts the React dashboard globally with automatic builds from git. Free SSL, fast deploys.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Cron Triggers\cell Scheduled execution. Fires hourly to generate synthetic feedback. In production, would handle periodic tasks like digest emails or stale alert cleanup.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Queues\cell NOT USED - Requires Workers Paid ($5/mo). Would enable async processing. 1M ops/mo free within paid plan. Code exists but disabled.\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx2500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Email Routing\cell NOT CONNECTED - Code exists for alert emails but requires domain setup in Cloudflare.\cell\row
+
+\pard\par
+\fs24\b What Each Product Does in Cerebro:\b0\fs22\par
+\par
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+\b Feature\cell Products Used\cell\b0\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Submit feedback\cell Workers \uc2\u8594 Workers AI (embedding) \uc2\u8594 D1 + Vectorize\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+View dashboard\cell Pages \uc2\u8594 Workers \uc2\u8594 D1 (queries)\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+AI Chat\cell Workers \uc2\u8594 Workers AI (embedding) \uc2\u8594 Vectorize (search) \uc2\u8594 Workers AI (LLM)\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Analytics\cell Workers \uc2\u8594 D1 (aggregations) \uc2\u8594 Workers AI (report generation)\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Semantic search\cell Workers \uc2\u8594 Workers AI (query embedding) \uc2\u8594 Vectorize (similarity) \uc2\u8594 D1\cell\row
+
+\pard\par
+
+\fs28\b 3. Workers Layer - API Handlers\b0\fs22\par
+\par
+Location: {\f1 workers/src/handlers/}\par
+\par
+\b Actively Used in Prototype:\b0\par
+\bullet  {\f1 scheduled.ts} - \b PRIMARY DATA SOURCE\b0  - Cron job generates synthetic feedback hourly\par
+\bullet  {\f1 feedback.ts} - CRUD operations for feedback records\par
+\bullet  {\f1 analytics.ts} - Metrics, trends, and AI-generated reports\par
+\bullet  {\f1 chat.ts} - AI chatbot for querying feedback insights\par
+\bullet  {\f1 search.ts} - Semantic and keyword search across feedback\par
+\bullet  {\f1 alerts.ts} - Alert management and notification triggers\par
+\par
+\b Scaffolded but Not Connected (Production-Ready):\b0\par
+\bullet  {\f1 webhooks.ts} - Webhook endpoints exist for GitHub, Discord, Zendesk but no real integrations\par
+\par
+
+\fs28\b 4. Services Layer\b0\fs22\par
+\par
+Location: {\f1 workers/src/services/}\par
+\par
+\b 4.1 AI Service ({\f1 ai.ts})\b0\par
+\bullet  {\f1 analyzeSentiment()} - Sentiment scoring using {\f1 distilbert-sst-2-int8}\par
+\bullet  {\f1 classifyThemes()} - Theme extraction using {\f1 llama-3.1-8b-instruct}\par
+\bullet  {\f1 calculateUrgency()} - Priority scoring based on content/customer\par
+\bullet  {\f1 generateEmbedding()} - Vector embeddings via {\f1 bge-base-en-v1.5}\par
+\bullet  {\f1 generateText()} - LLM responses for chat and reports\par
+\par
+\b 4.2 Database Service ({\f1 database.ts})\b0\par
+\bullet  CRUD operations for all entities\par
+\bullet  Query builders for filtering/pagination\par
+\bullet  JSON serialization for array fields\par
+\par
+\b 4.3 Vectorize Service ({\f1 vectorize.ts})\b0\par
+\bullet  Store embeddings with feedback metadata\par
+\bullet  Semantic similarity search\par
+\bullet  RAG context retrieval for chatbot\par
+\par
+\b 4.4 Queue Service ({\f1 queue.ts})\b0\par
+\bullet  Async feedback processing\par
+\bullet  Batch AI analysis operations\par
+\bullet  Retry handling for failures\par
+\par
+\b 4.5 Notification Services\b0\par
+\bullet  {\f1 email.ts} - Email alerts via Cloudflare Email Routing\par
+\bullet  {\f1 slack.ts} - Slack webhook notifications\par
+\par
+
+\fs28\b 5. Data Models\b0\fs22\par
+\par
+Location: {\f1 workers/src/types/index.ts}\par
+\par
+\b Core Entities:\b0\par
+\par
+\b Feedback\b0\par
+{\f1\fs18
+\{\par
+  id: string\par
+  content: string\par
+  source: 'github' | 'discord' | 'twitter' | 'support' | 'forum' | 'email'\par
+  sentiment: number (-1 to 1)\par
+  sentiment_label: 'positive' | 'neutral' | 'frustrated' | 'concerned' | 'annoyed'\par
+  urgency: number (1-10)\par
+  product: string\par
+  themes: string[]\par
+  customer_id: string\par
+  customer_name: string\par
+  customer_tier: 'enterprise' | 'pro' | 'free'\par
+  customer_arr: number\par
+  status: 'new' | 'in_review' | 'acknowledged' | 'in_progress' | 'resolved'\par
+\}\par
+}\fs22\par
+\par
+\b Customer\b0\par
+{\f1\fs18
+\{\par
+  id: string\par
+  name: string\par
+  email: string\par
+  tier: 'enterprise' | 'pro' | 'free'\par
+  arr: number\par
+  products: string[]\par
+  health_score: number\par
+\}\par
+}\fs22\par
+\par
+\b Alert\b0\par
+{\f1\fs18
+\{\par
+  id: string\par
+  type: 'critical' | 'warning' | 'info'\par
+  message: string\par
+  product: string\par
+  acknowledged: boolean\par
+  feedback_ids: string[]\par
+\}\par
+}\fs22\par
+\par
+
+\fs28\b 6. AI Models Used\b0\fs22\par
+\par
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+\b Model\cell Task\cell Identifier\cell\b0\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+DistilBERT\cell Sentiment Analysis\cell @cf/huggingface/distilbert-sst-2-int8\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Llama 3.1 8B\cell Theme Classification, Chat, Reports\cell @cf/meta/llama-3.1-8b-instruct\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+BGE Base\cell Text Embeddings\cell @cf/baai/bge-base-en-v1.5\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx6000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+BART Large\cell Summarization\cell @cf/facebook/bart-large-cnn\cell\row
+
+\pard\par
+
+\fs28\b 7. Data Flow (Prototype)\b0\fs22\par
+\par
+\b 7.1 Synthetic Feedback Generation (How Prototype Actually Works)\b0\par
+{\f1\fs18
+1. Cron Trigger fires hourly (or manual /api/cron/trigger)\par
+2. scheduled.ts generates 5-15 random feedback items:\par
+   - Picks random customer from hardcoded list\par
+   - Picks random product (workers, r2, pages, d1, etc.)\par
+   - Picks random template (performance, bugs, pricing, positive)\par
+   - Adds randomized sentiment/urgency values\par
+3. Processing is SYNCHRONOUS (Queues disabled - PAID feature):\par
+   a. analyzeSentiment() \uc2\u8594 sentiment score + label\par
+   b. classifyThemes() \uc2\u8594 theme array\par
+   c. calculateUrgency() \uc2\u8594 urgency score\par
+   d. generateEmbedding() \uc2\u8594 768-dim vector\par
+4. Store in D1 (feedback table)\par
+5. Store in Vectorize (for semantic search)\par
+\par
+NOTE: Queue service code exists but is NOT active.\par
+Queues require Workers Paid plan ($5/mo) but include 1M free ops/mo.\par
+Prototype runs on Free plan, so Queues are commented out in wrangler.toml.\par
+}\fs22\par
+\par
+\b 7.2 Production Webhook Flow (Not Connected in Prototype)\b0\par
+{\f1\fs18
+1. External Source (GitHub/Discord/Zendesk) \uc2\u8594 Webhook Handler\par
+2. Webhook Handler parses payload \uc2\u8594 Queue (FEEDBACK_QUEUE)\par
+3. Queue Consumer processes with AI (same as above)\par
+4. Store in D1 + Vectorize\par
+Note: Webhook endpoints exist but no real external services are connected.\par
+}\fs22\par
+\par
+\b 7.3 Chat/Search Flow (Fully Functional)\b0\par
+{\f1\fs18
+1. User Query \uc2\u8594 Chat Handler\par
+2. generateEmbedding(query) \uc2\u8594 query vector\par
+3. Vectorize.query() \uc2\u8594 top-k similar feedback\par
+4. Build RAG context from matches\par
+5. generateText(context + query) \uc2\u8594 AI response\par
+6. Return structured response with sources\par
+}\fs22\par
+\par
+
+\fs28\b 8. Frontend Architecture\b0\fs22\par
+\par
+Location: {\f1 frontend/src/}\par
+\par
+\b Technology Stack:\b0\par
+\bullet  React 18 with TypeScript\par
+\bullet  Vite for build tooling\par
+\bullet  Tailwind CSS for styling\par
+\bullet  Hosted on Cloudflare Pages\par
+\par
+\b Key Components:\b0\par
+\bullet  {\f1 App.tsx} - Main dashboard with tabs for different views\par
+\bullet  {\f1 AIChatbot.tsx} - Floating AI assistant widget\par
+\bullet  {\f1 hooks/useApi.ts} - API communication hooks\par
+\bullet  {\f1 services/api.ts} - API client configuration\par
+\par
+
+\fs28\b 9. Database Schema (D1)\b0\fs22\par
+\par
+Location: {\f1 workers/migrations/001_initial.sql}\par
+\par
+\b Tables:\b0\par
+\bullet  {\f1 feedback} - Core feedback records\par
+\bullet  {\f1 customers} - Customer profiles and metadata\par
+\bullet  {\f1 themes} - Trending theme aggregations\par
+\bullet  {\f1 alerts} - Alert history and status\par
+\bullet  {\f1 feature_requests} - Aggregated feature requests\par
+\par
+
+\fs28\b 10. Deployment URLs\b0\fs22\par
+\par
+\bullet  \b Dashboard:\b0  https://cerebro-dashboard.pages.dev\par
+\bullet  \b API:\b0  https://cerebro-api.<account>.workers.dev\par
+\par
+
+\fs28\b 11. Prototype vs Production\b0\fs22\par
+\par
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+\b Component\cell Prototype\cell Production (Future)\cell\b0\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Data Source\cell Synthetic (cron + templates)\cell Real webhooks from GitHub, Discord, Zendesk\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Customers\cell 10 hardcoded fake customers\cell Real customer database integration\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Webhook Handlers\cell Code exists, not connected\cell Connected to real APIs\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+AI Processing\cell Fully functional\cell Same (production-ready)\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Dashboard\cell Fully functional\cell Same (production-ready)\cell\row
+
+\trowd\trgaph100
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx3000
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx5500
+\clbrdrt\brdrw10\brdrs\clbrdrl\brdrw10\brdrs\clbrdrb\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\cellx9000
+Semantic Search\cell Fully functional\cell Same (production-ready)\cell\row
+
+\pard\par
+
+\fs28\b 12. AI Prompts for Building This Prototype\b0\fs22\par
+\par
+\fs24\b How to Recreate Cerebro Using Vibe Coding (5 Prompts)\b0\fs22\par
+\par
+These are the actual prompts you'd use with Cursor, Copilot, or Bolt. Keep it conversational - let the AI figure out the technical details.\par
+\par
+\fs22\b Prompt 1 - The Vision\b0\fs20\par
+{\f1\fs16
+"Build me a customer feedback intelligence platform on Cloudflare. I want to collect feedback\par
+from different sources, analyze sentiment and themes using AI, and surface insights through\par
+a dashboard. Use Workers, D1, Workers AI, and Vectorize. Call it Cerebro."\par
+}\fs20\par
+\par
+\fs22\b Prompt 2 - Make It Smart\b0\fs20\par
+{\f1\fs16
+"Add AI capabilities to analyze incoming feedback:\par
+- Detect if feedback is positive, negative, or frustrated\par
+- Extract themes like 'performance', 'pricing', 'bugs', 'feature requests'\par
+- Generate embeddings so we can search semantically later\par
+- Build a chat interface where I can ask questions about the feedback and get AI answers\par
+  with sources"\par
+}\fs20\par
+\par
+\fs22\b Prompt 3 - Fake Data for Demos\b0\fs20\par
+{\f1\fs16
+"I need realistic demo data without connecting real integrations yet. Create a scheduled job\par
+that generates fake but realistic customer feedback every hour - mix of complaints about\par
+performance, bug reports, feature requests, and happy customers. Make it look like it's\par
+coming from enterprise and pro tier customers using different Cloudflare products."\par
+}\fs20\par
+\par
+\fs22\b Prompt 4 - Dashboard\b0\fs20\par
+{\f1\fs16
+"Create a React dashboard that shows:\par
+- Overview with key metrics (total feedback, sentiment breakdown, urgent items)\par
+- Feedback list I can filter and search\par
+- Analytics with trends over time\par
+- At-risk customers (unhappy + high value)\par
+- AI chatbot I can ask questions to\par
+\par
+Make it clean, add dark mode, deploy to Cloudflare Pages."\par
+}\fs20\par
+\par
+\fs22\b Prompt 5 - Ship It\b0\fs20\par
+{\f1\fs16
+"Help me deploy everything. Set up the database, create the vector index, deploy the worker,\par
+seed some initial data, and get the frontend live. Give me the commands to run."\par
+}\fs20\par
+\par
+
+\line
+\pard\qc
+\fs18\i Generated from Cerebro Platform codebase analysis\i0\fs22\par
+\fs18\i January 2026\i0\fs22\par
+}

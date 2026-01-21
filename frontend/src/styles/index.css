@@ -10,6 +10,20 @@
 
 html { scroll-behavior: smooth; }
 
+/* Prevent horizontal overflow on mobile */
+body { overflow-x: hidden; }
+
+/* Safe area insets for mobile notches */
+@supports (padding: max(0px)) {
+  .safe-area-inset-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .safe-area-inset-top { padding-top: max(0px, env(safe-area-inset-top)); }
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 640px) {
+  button, a, select, input { min-height: 44px; }
+}
+
 /* Line clamp utility */
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -23,3 +37,59 @@ html { scroll-behavior: smooth; }
   to { opacity: 1; transform: translateY(0); }
 }
 .chat-message { animation: fadeInUp 0.3s ease-out; }
+
+/* Chatbot button animations */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes tooltip-fade {
+  0%, 10% { opacity: 0; transform: translateX(10px); }
+  20%, 80% { opacity: 1; transform: translateX(0); }
+  90%, 100% { opacity: 0; transform: translateX(10px); }
+}
+
+.chat-button-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom right, #f97316, #ea580c);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+.chat-button-bounce {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+.chat-tooltip {
+  animation: tooltip-fade 6s ease-in-out infinite;
+}
+
+/* Print styles for PDF export */
+@media print {
+  /* Hide navigation, sidebar, header, and chatbot */
+  header, nav, aside, .print\\:hidden { display: none !important; }
+  
+  /* Reset page layout */
+  body { background: white !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+  
+  /* Make report full width */
+  .print\\:w-full { width: 100% !important; max-width: none !important; }
+  
+  /* Remove shadows and borders for cleaner print */
+  .shadow, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+  
+  /* Ensure content fits on page */
+  * { overflow: visible !important; }
+  
+  /* Page setup */
+  @page { margin: 1cm; size: A4; }
+}
