@@ -89,13 +89,13 @@ function Dashboard() {
   });
 
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
-    queryKey: ['analytics', selectedTimeRange, selectedProduct],
-    queryFn: () => getAnalyticsSummary(selectedTimeRange, selectedProduct === 'all' ? undefined : selectedProduct),
+    queryKey: ['analytics', selectedTimeRange, selectedProduct, selectedSource],
+    queryFn: () => getAnalyticsSummary(selectedTimeRange, selectedProduct === 'all' ? undefined : selectedProduct, selectedSource === 'all' ? undefined : selectedSource),
   });
 
   const { data: themesData, isLoading: themesLoading } = useQuery({
-    queryKey: ['themes', selectedTimeRange, selectedProduct],
-    queryFn: () => getTrendingThemes(selectedTimeRange, activeTab === 'themes' ? 20 : 5, selectedProduct === 'all' ? undefined : selectedProduct),
+    queryKey: ['themes', selectedTimeRange, selectedProduct, selectedSource],
+    queryFn: () => getTrendingThemes(selectedTimeRange, activeTab === 'themes' ? 20 : 5, selectedProduct === 'all' ? undefined : selectedProduct, selectedSource === 'all' ? undefined : selectedSource),
   });
 
   const { data: productsData, isLoading: productsLoading } = useQuery({

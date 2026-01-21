@@ -16,8 +16,9 @@ app.get('/summary', async (c) => {
   const env = c.env;
   const timeRange = c.req.query('time_range') || '7d';
   const product = c.req.query('product');
+  const source = c.req.query('source');
   
-  const stats = await getAnalyticsSummary(env, timeRange, product);
+  const stats = await getAnalyticsSummary(env, timeRange, product, source);
   
   // Calculate changes (would normally compare to previous period)
   const summary = {
@@ -44,6 +45,7 @@ app.get('/themes', async (c) => {
   const limit = parseInt(c.req.query('limit') || '10');
   const timeRange = c.req.query('time_range') || '7d';
   const product = c.req.query('product');
+  const source = c.req.query('source');
   
   // Calculate date filter
   const now = new Date();
@@ -81,6 +83,11 @@ app.get('/themes', async (c) => {
   if (product && product !== 'all') {
     query += ` AND product = ?`;
     params.push(product);
+  }
+  
+  if (source && source !== 'all') {
+    query += ` AND source = ?`;
+    params.push(source);
   }
   
   query += ` GROUP BY themes, product, sentiment_label`;
@@ -165,6 +172,11 @@ app.get('/themes', async (c) => {
     if (product && product !== 'all') {
       issuesQuery += ` AND product = ?`;
       issuesParams.push(product);
+    }
+    
+    if (source && source !== 'all') {
+      issuesQuery += ` AND source = ?`;
+      issuesParams.push(source);
     }
     
     issuesQuery += ` ORDER BY urgency DESC, created_at DESC LIMIT 5`;

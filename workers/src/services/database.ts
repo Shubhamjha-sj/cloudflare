@@ -400,7 +400,7 @@ export async function acknowledgeAlert(env: Env, id: string): Promise<void> {
 // Analytics Queries
 // ============================================
 
-export async function getAnalyticsSummary(env: Env, timeRange: string, product?: string): Promise<{
+export async function getAnalyticsSummary(env: Env, timeRange: string, product?: string, source?: string): Promise<{
   total_feedback: number;
   avg_sentiment: number;
   critical_alerts: number;
@@ -421,6 +421,11 @@ export async function getAnalyticsSummary(env: Env, timeRange: string, product?:
   if (product && product !== 'all') {
     feedbackQuery += ` AND product = ?`;
     feedbackParams.push(product);
+  }
+  
+  if (source && source !== 'all') {
+    feedbackQuery += ` AND source = ?`;
+    feedbackParams.push(source);
   }
   
   const feedbackStats = await env.DB.prepare(feedbackQuery).bind(...feedbackParams).first();

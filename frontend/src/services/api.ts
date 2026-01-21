@@ -63,16 +63,18 @@ export const updateFeedback = async (id: string, updates: Partial<Feedback>): Pr
 };
 
 // Analytics API
-export const getAnalyticsSummary = async (timeRange: TimeRange, product?: string): Promise<AnalyticsSummary> => {
+export const getAnalyticsSummary = async (timeRange: TimeRange, product?: string, source?: string): Promise<AnalyticsSummary> => {
   let url = `/analytics/summary?time_range=${timeRange}`;
   if (product && product !== 'all') url += `&product=${product}`;
+  if (source && source !== 'all') url += `&source=${source}`;
   const response = await client.get(url);
   return transformKeys<ApiResponse<AnalyticsSummary>>(response.data).data;
 };
 
-export const getTrendingThemes = async (timeRange: TimeRange, limit = 10, product?: string): Promise<TrendingTheme[]> => {
+export const getTrendingThemes = async (timeRange: TimeRange, limit = 10, product?: string, source?: string): Promise<TrendingTheme[]> => {
   let url = `/analytics/themes?time_range=${timeRange}&limit=${limit}`;
   if (product) url += `&product=${product}`;
+  if (source && source !== 'all') url += `&source=${source}`;
   const response = await client.get(url);
   return transformKeys<ApiResponse<TrendingTheme[]>>(response.data).data;
 };
