@@ -9,7 +9,8 @@
     "tail": "wrangler tail",
     "db:migrate": "wrangler d1 execute signal-db --file=./migrations/001_initial.sql",
     "db:migrate:local": "wrangler d1 execute signal-db --local --file=./migrations/001_initial.sql",
-    "test": "vitest"
+    "test": "vitest",
+    "build": "tsc"
   },
   "dependencies": {
     "hono": "^4.0.0",

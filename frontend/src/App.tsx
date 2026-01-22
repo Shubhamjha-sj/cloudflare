@@ -417,9 +417,14 @@ function Dashboard() {
                         </div>
                         <p className="text-sm font-medium text-gray-900 leading-snug">{theme.theme}</p>
                       </div>
-                      <div className={`flex items-center text-sm font-medium ${theme.change > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      <div 
+                        className={`flex items-center text-sm font-medium ${theme.change > 0 ? 'text-red-600' : 'text-green-600'}`}
+                        title={theme.change > 0 
+                          ? "Mentions increasing" 
+                          : "Mentions decreasing"}
+                      >
                         {theme.change > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-                        {Math.abs(theme.change)}%
+                        <span>{Math.abs(theme.change)}%</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -454,10 +459,15 @@ function Dashboard() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{feedback.product}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${getSentimentBg(feedback.sentiment)} ${getSentimentColor(feedback.sentiment)}`}>{feedback.sentiment > 0 ? '+' : ''}{feedback.sentiment.toFixed(1)}</span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${getSentimentBg(feedback.sentiment)} ${getSentimentColor(feedback.sentiment)}`}
+                              title="Sentiment score: -1 (very negative) to +1 (very positive). Indicates the overall tone of the feedback."
+                            >
+                              {feedback.sentiment > 0 ? '+' : ''}{feedback.sentiment.toFixed(1)}
+                            </span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-1"><div className={`w-2 h-2 rounded-full ${getUrgencyColor(feedback.urgency)}`}></div><span className="text-xs text-gray-500">U:{feedback.urgency}</span></div>
+                            <div className="flex items-center space-x-1"><div className={`w-2 h-2 rounded-full ${getUrgencyColor(feedback.urgency)}`}></div><span className="text-xs text-gray-500">Urgency:{feedback.urgency}</span></div>
                             <span className="text-xs text-gray-400">{formatTime(feedback.createdAt)}</span>
                           </div>
                         </div>
@@ -580,7 +590,12 @@ function Dashboard() {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${theme.sentiment === 'frustrated' ? 'bg-red-100 text-red-700' : theme.sentiment === 'concerned' ? 'bg-orange-100 text-orange-700' : theme.sentiment === 'positive' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                           {theme.sentiment}
                         </span>
-                        <div className={`flex items-center text-sm font-medium ${theme.change > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        <div 
+                          className={`flex items-center text-sm font-medium ${theme.change > 0 ? 'text-red-600' : 'text-green-600'}`}
+                          title={theme.change > 0 
+                            ? "Mentions increasing" 
+                            : "Mentions decreasing"}
+                        >
                           {theme.change > 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
                           {Math.abs(theme.change)}%
                         </div>
@@ -702,7 +717,12 @@ function Dashboard() {
                       <p className="text-xs sm:text-sm text-gray-700 mb-2 sm:mb-3">{feedback.content}</p>
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <span className="text-xs bg-gray-100 text-gray-600 px-1.5 sm:px-2 py-0.5 rounded-full">{feedback.product}</span>
-                        <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${getSentimentBg(feedback.sentiment)} ${getSentimentColor(feedback.sentiment)}`}>{feedback.sentiment > 0 ? '+' : ''}{feedback.sentiment.toFixed(2)}</span>
+                        <span
+                          className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${getSentimentBg(feedback.sentiment)} ${getSentimentColor(feedback.sentiment)}`}
+                          title="Sentiment score: -1 (very negative) to +1 (very positive). Indicates the overall tone of the feedback."
+                        >
+                          {feedback.sentiment > 0 ? '+' : ''}{feedback.sentiment.toFixed(2)}
+                        </span>
                         <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${feedback.status === 'new' ? 'bg-blue-100 text-blue-700' : feedback.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>{feedback.status}</span>
                       </div>
                     </div>
